@@ -1,7 +1,8 @@
 import './style.css';
 
+import { from, fromEvent, mergeMap, of, shareReplay } from 'rxjs';
+import { ajax } from 'rxjs/ajax';
 
-import { ReplaySubject } from 'rxjs';
 
 const observer = {
   next: (val: any) => console.log('next', val),
@@ -9,40 +10,32 @@ const observer = {
   complete: () => console.log('complete')
 };
 
+const click$ = fromEvent(document, 'click');
+const ajax$ = ajax('https://api.github.com/users/octocat');
+
 /*
- * ReplaySubject's accept an optional argument, the number
- * of previously emitted values you wish to 'replay' 
- * on subscription. These values will be emitted in sequence
- * beginning with the most recent, to any late subscribers.
+ * shareReplay turns a unicast observable into multicasted
+ * observable, utilizing a ReplaySubject behind the scenes.
  * 
- * By default, if no arguments are supplied all values are replayed.
+ * In this example, we are mapping any clicks to an ajax
+ * request, sharing the response.
  */
-const subject = new ReplaySubject();
+const sharedClick$ = click$.pipe(
+  mergeMap(() => ajax$),
+  /*
+   * By default shareReplay shares all old values, like
+   * a standard ReplaySubject. In this case, we only want
+   * to share the most recent response.
+   */
+  shareReplay(1)
+);
 
-subject.next('Hello');
-/*
- * Receieves the value 'Hello' on subscription.
- */
-const subscription = subject.subscribe(observer);
-
-/*
- * Emit 'World' to all subscribers, just the observer above
- * right now.
- */
-subject.next('World');
-
-/*
- * Late subscribers receieve the number of values replayed,
- * when available. For instance, the ReplaySubject will emit
- * 'Hello' and 'World' to this subscriber.
- */
-const secondSubscription = subject.subscribe(observer);
-
-subject.next('Goodbye!');
-subject.next('World!');
+sharedClick$.subscribe(observer)
 
 /*
- * 'Hello' 'World' 'Goodbye' 'World'
+ * Late subscribers will be replayed old value(s).
  */
-const thirdSubscription = subject.subscribe(observer);
-
+setTimeout(() => {
+  console.log('subscribing');
+  sharedClick$.subscribe(observer);
+}, 5000);
