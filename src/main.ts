@@ -1,36 +1,48 @@
-
-import {  } from 'rxjs';
-import './style.css'
+import './style.css';
 
 
-// begin lesson code
-import { ObservableStore } from './store';
+import { ReplaySubject } from 'rxjs';
 
-const store = new ObservableStore({
-  user: 'tom',
-  isAuthenticated: true
-});
+const observer = {
+  next: (val: any) => console.log('next', val),
+  error: (err: any) => console.log('error', err),
+  complete: () => console.log('complete')
+};
 
 /*
- * Select a slice of state from store.
+ * ReplaySubject's accept an optional argument, the number
+ * of previously emitted values you wish to 'replay' 
+ * on subscription. These values will be emitted in sequence
+ * beginning with the most recent, to any late subscribers.
+ * 
+ * By default, if no arguments are supplied all values are replayed.
  */
-store.selectState('user').subscribe(console.log);
+const subject = new ReplaySubject();
+
+subject.next('Hello');
+/*
+ * Receieves the value 'Hello' on subscription.
+ */
+const subscription = subject.subscribe(observer);
 
 /*
- * Update a property with new value.
+ * Emit 'World' to all subscribers, just the observer above
+ * right now.
  */
-store.updateState({
-  user: 'bob'
-});
-
-store.updateState({
-  isAuthenticated: true
-});
+subject.next('World');
 
 /*
- * Selected state above (user) only emits when value has changed
- * for the requested property.
+ * Late subscribers receieve the number of values replayed,
+ * when available. For instance, the ReplaySubject will emit
+ * 'Hello' and 'World' to this subscriber.
  */
-store.updateState({
-  isAuthenticated: false
-});
+const secondSubscription = subject.subscribe(observer);
+
+subject.next('Goodbye!');
+subject.next('World!');
+
+/*
+ * 'Hello' 'World' 'Goodbye' 'World'
+ */
+const thirdSubscription = subject.subscribe(observer);
+
