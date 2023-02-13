@@ -1,8 +1,7 @@
 import './style.css';
 
-import { from, fromEvent, mergeMap, of, shareReplay } from 'rxjs';
-import { ajax } from 'rxjs/ajax';
 
+import { AsyncSubject } from 'rxjs';
 
 const observer = {
   next: (val: any) => console.log('next', val),
@@ -10,32 +9,39 @@ const observer = {
   complete: () => console.log('complete')
 };
 
-const click$ = fromEvent(document, 'click');
-const ajax$ = ajax('https://api.github.com/users/octocat');
+/*
+ * AsyncSubject's only emit the final value on completion.
+ */
+const subject = new AsyncSubject();
 
 /*
- * shareReplay turns a unicast observable into multicasted
- * observable, utilizing a ReplaySubject behind the scenes.
- * 
- * In this example, we are mapping any clicks to an ajax
- * request, sharing the response.
+ * For instance, let's create a few subscribers here...
  */
-const sharedClick$ = click$.pipe(
-  mergeMap(() => ajax$),
-  /*
-   * By default shareReplay shares all old values, like
-   * a standard ReplaySubject. In this case, we only want
-   * to share the most recent response.
-   */
-  shareReplay(1)
-);
-
-sharedClick$.subscribe(observer)
+const subscription = subject.subscribe(observer);
+const secondSubscription = subject.subscribe(observer);
 
 /*
- * Late subscribers will be replayed old value(s).
+ * next 4 values to AsyncSubject, nothing is emitted to observers.
  */
-setTimeout(() => {
-  console.log('subscribing');
-  sharedClick$.subscribe(observer);
-}, 5000);
+subject.next('Hello');
+subject.next('World');
+subject.next('Goodbye!');
+subject.next('World!');
+
+/*
+ * Once the subject completes, the last value, in this case
+ * 'World!' is emitted.
+ */
+subject.complete();
+
+
+/********************
+ * Have a question, comment, or just want to chat about RxJS?
+ * Ping me on Ultimate Courses slack or on
+ * Twitter https://twitter.com/btroncone
+ * I look forward to hearing from you!
+ * For additional RxJS info and operator examples check out
+ * Learn RxJS (https://www.learnrxjs.io) and
+ * the Ultimate Course RxJS blog!
+ * (https://ultimatecourses.com/blog/category/rxjs)
+ ********************/
