@@ -1,24 +1,47 @@
 
-import { } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import './style.css'
 
 
-import { loadingSercice } from "./loadingService";
+const observer = {
+  next: (val: any) => console.log('next', val),
+  error: (err: any) => console.log('error', err),
+  complete: () => console.log('complete')
+};
 
-const loadingOverlay = document.getElementById('loading-overlay')
+/*
+ * BehaviorSubject's accept an argument, the initial seed value.
+ * This value will be emitted to subscribers until .next is called
+ * again. New subscribers to BehaviorSubject's always receieve the
+ * last emitted value on subscription.
+ */
+const subject = new BehaviorSubject('Hello');
 
+/*
+ * Subscribers to the BehaviorSubject will receieve the seed value,
+ * or last emitted value. In this case no other value has been
+ * emitted so the subscriber will initially receive 'Hello'
+ */
+const subscription = subject.subscribe(observer);
 
-loadingSercice.loadingStatus$.subscribe(
-  (  isLoading: any) => {
-    if (isLoading){
-      loadingOverlay?.classList.add('open')
-    }
-    else {
-      loadingOverlay?.classList.remove('open')
-    }
-  }
-)
+/*
+ * Emit 'World' to all subscribers, just the observer above
+ * right now.
+ */
+subject.next('World');
 
+/*
+ * Contrary to the normal Subject, BehaviorSubject will deliver the last
+ * emitted value to late subscribers. In this case our subscriber
+ * will receive 'World' immediately.
+ */
+const secondSubscription = subject.subscribe(observer);
 
+subject.next('Goodbye!');
 
-setTimeout(() => loadingSercice.hideLoading(), 1500)
+/*
+ * You can also access the current value of the BehaviorSubject
+ * synchronously by calling getValue(), although this is
+ * generally not advised.
+ */
+console.log('getValue()', subject.getValue());
